@@ -1,180 +1,180 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM ASTRO - Dashboard</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <!-- IMAGEM DE FUNDO DO CAPACETE DE ASTRONAUTA -->
-    <div class="background-image"></div>
-    
-    <!-- TOAST DE BOAS-VINDAS -->
-    <div class="welcome-toast" id="welcomeToast">
-        <div class="toast-content">
-            <span class="toast-icon">🎉</span>
-            <div class="toast-text">
-                <strong>Bem-vindo(a), <span id="toastUserName">Astronauta</span>!</strong>
-                <p>Pronto para decolar suas vendas? 🚀</p>
-            </div>
-            <button class="toast-close" onclick="closeToast()">✕</button>
-        </div>
-    </div>
-
-    <!-- HEADER -->
-    <header class="header">
-        <div class="header-left">
-            <h1 class="logo">
-                <span class="logo-icon">🌟</span>
-                CRM ASTRO
-            </h1>
-        </div>
-        <div class="header-right">
-            <span class="user-info">Olá, <strong id="userName">Carregando...</strong></span>
-            <button class="logout-btn" onclick="logout()">Sair</button>
-        </div>
-    </header>
-
-    <!-- TABS -->
-    <div class="tabs">
-        <button class="tab active" data-tab="pipeline">📋 Pipeline</button>
-        <button class="tab" data-tab="retornos">📞 Retornos</button>
-        <button class="tab" data-tab="ranking">🏆 Ranking</button>
-        <button class="tab" data-tab="negocios">💰 Novos Negócios</button>
-    </div>
-
-    <!-- CONTEÚDO DAS TABS -->
-    <div class="tab-content" id="tab-pipeline">
-        <div class="pipeline-header">
-            <h2>Pipeline de Vendas</h2>
-            <button class="btn-primary" onclick="showAddLeadModal()">+ Novo Lead</button>
-        </div>
-        
-        <div class="kanban-board" id="kanbanBoard">
-            <!-- Colunas do Kanban serão inseridas via JavaScript -->
-        </div>
-    </div>
-
-    <div class="tab-content hidden" id="tab-retornos">
-        <h2>Retornos WhatsApp</h2>
-        <div class="retornos-list" id="retornosList">
-            <!-- Lista de retornos será inserida via JavaScript -->
-        </div>
-    </div>
-
-    <div class="tab-content hidden" id="tab-ranking">
-        <h2>🏆 Ranking de Retornos Positivos</h2>
-        <div class="ranking-list" id="rankingList">
-            <!-- Ranking será inserido via JavaScript -->
-        </div>
-    </div>
-
-    <div class="tab-content hidden" id="tab-negocios">
-        <div class="negocios-header">
-            <h2>💰 Novos Negócios</h2>
-            <div class="faturamento-destaque" id="faturamentoDestaque">
-                <span class="faturamento-label">Faturamento Total:</span>
-                <span class="faturamento-valor">R$ 0,00</span>
-            </div>
-        </div>
-        
-        <div class="filtros-negocios">
-            <label>
-                <input type="radio" name="periodo" value="mes" checked> Mês Atual
-            </label>
-            <label>
-                <input type="radio" name="periodo" value="ano"> Ano Atual
-            </label>
-            <label>
-                <input type="radio" name="periodo" value="todos"> Todos
-            </label>
-        </div>
-        
-        <div class="negocios-list" id="negociosList">
-            <!-- Lista de negócios será inserida via JavaScript -->
-        </div>
-    </div>
-
-    <!-- MODAL: ADICIONAR LEAD -->
-    <div class="modal hidden" id="addLeadModal">
-        <div class="modal-content">
-            <h3>Novo Lead</h3>
-            <form id="addLeadForm">
-                <input type="text" name="nome" placeholder="Nome" required>
-                <input type="text" name="instagram" placeholder="Instagram (@)" required>
-                <input type="tel" name="whatsapp" placeholder="WhatsApp" required>
-                <textarea name="observacoes" placeholder="Observações"></textarea>
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('addLeadModal')">Cancelar</button>
-                    <button type="submit">Adicionar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL: EDITAR LEAD -->
-    <div class="modal hidden" id="editLeadModal">
-        <div class="modal-content">
-            <h3>Editar Lead</h3>
-            <form id="editLeadForm">
-                <input type="hidden" name="leadId">
-                <input type="text" name="nome" placeholder="Nome" required>
-                <input type="text" name="instagram" placeholder="Instagram (@)" required>
-                <input type="tel" name="whatsapp" placeholder="WhatsApp" required>
-                <textarea name="observacoes" placeholder="Observações"></textarea>
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('editLeadModal')">Cancelar</button>
-                    <button type="submit">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL: TIPO DE PLANO (FECHAMENTO) -->
-    <div class="modal hidden" id="planoModal">
-        <div class="modal-content">
-            <h3>🎯 Fechamento de Contrato</h3>
-            <form id="planoForm">
-                <input type="hidden" name="leadId">
-                
-                <label>Data do Fechamento:</label>
-                <input type="date" name="data_fechamento" id="dataFechamento" required>
-                
-                <label>Número de Contas:</label>
-                <input type="number" name="plano_contas" placeholder="Ex: 3" required>
-                
-                <label>Número de Postagens/mês:</label>
-                <input type="number" name="plano_posts" placeholder="Ex: 20" required>
-                
-                <label>Valor do Contrato (R$):</label>
-                <input type="number" name="plano_valor_contrato" step="0.01" placeholder="Ex: 1500.00" required>
-                
-                <label>Forma de Pagamento:</label>
-                <select name="plano_forma_pagamento" required>
-                    <option value="">Selecione...</option>
-                    <option value="PIX">PIX</option>
-                    <option value="Cartão">Cartão</option>
-                </select>
-                
-                <label>Observações:</label>
-                <textarea name="plano_observacoes" placeholder="Detalhes adicionais do contrato..."></textarea>
-                
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('planoModal')">Cancelar</button>
-                    <button type="submit">Confirmar Fechamento</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
-</body>
-</html>
+1	<!DOCTYPE html>
+     2	<html lang="pt-BR">
+     3	<head>
+     4	    <meta charset="UTF-8">
+     5	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     6	    <title>CRM ASTRO - Dashboard</title>
+     7	    
+     8	    <!-- Google Fonts -->
+     9	    <link rel="preconnect" href="https://fonts.googleapis.com">
+    10	    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    11	    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    12	    
+    13	    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    14	    <link rel="stylesheet" href="styles.css">
+    15	</head>
+    16	<body>
+    17	    <!-- IMAGEM DE FUNDO DO CAPACETE DE ASTRONAUTA -->
+    18	    <div class="background-image"></div>
+    19	    
+    20	    <!-- TOAST DE BOAS-VINDAS -->
+    21	    <div class="welcome-toast" id="welcomeToast">
+    22	        <div class="toast-content">
+    23	            <span class="toast-icon">🎉</span>
+    24	            <div class="toast-text">
+    25	                <strong>Bem-vindo(a), <span id="toastUserName">Astronauta</span>!</strong>
+    26	                <p>Pronto para decolar suas vendas? 🚀</p>
+    27	            </div>
+    28	            <button class="toast-close" onclick="closeToast()">✕</button>
+    29	        </div>
+    30	    </div>
+    31	
+    32	    <!-- HEADER -->
+    33	    <header class="header">
+    34	        <div class="header-left">
+    35	            <h1 class="logo">
+    36	                <span class="logo-icon">🌟</span>
+    37	                CRM ASTRO
+    38	            </h1>
+    39	        </div>
+    40	        <div class="header-right">
+    41	            <span class="user-info">Olá, <strong id="userName">Carregando...</strong></span>
+    42	            <button class="logout-btn" onclick="logout()">Sair</button>
+    43	        </div>
+    44	    </header>
+    45	
+    46	    <!-- TABS -->
+    47	    <div class="tabs">
+    48	        <button class="tab active" data-tab="pipeline">📋 Pipeline</button>
+    49	        <button class="tab" data-tab="retornos">📞 Retornos</button>
+    50	        <button class="tab" data-tab="ranking">🏆 Ranking</button>
+    51	        <button class="tab" data-tab="negocios">💰 Novos Negócios</button>
+    52	    </div>
+    53	
+    54	    <!-- CONTEÚDO DAS TABS -->
+    55	    <div class="tab-content" id="tab-pipeline">
+    56	        <div class="pipeline-header">
+    57	            <h2>Pipeline de Vendas</h2>
+    58	            <button class="btn-primary" onclick="showAddLeadModal()">+ Novo Lead</button>
+    59	        </div>
+    60	        
+    61	        <div class="kanban-board" id="kanbanBoard">
+    62	            <!-- Colunas do Kanban serão inseridas via JavaScript -->
+    63	        </div>
+    64	    </div>
+    65	
+    66	    <div class="tab-content hidden" id="tab-retornos">
+    67	        <h2>Retornos WhatsApp</h2>
+    68	        <div class="retornos-list" id="retornosList">
+    69	            <!-- Lista de retornos será inserida via JavaScript -->
+    70	        </div>
+    71	    </div>
+    72	
+    73	    <div class="tab-content hidden" id="tab-ranking">
+    74	        <h2>🏆 Ranking de Retornos Positivos</h2>
+    75	        <div class="ranking-list" id="rankingList">
+    76	            <!-- Ranking será inserido via JavaScript -->
+    77	        </div>
+    78	    </div>
+    79	
+    80	    <div class="tab-content hidden" id="tab-negocios">
+    81	        <div class="negocios-header">
+    82	            <h2>💰 Novos Negócios</h2>
+    83	            <div class="faturamento-destaque" id="faturamentoDestaque">
+    84	                <span class="faturamento-label">Faturamento Total:</span>
+    85	                <span class="faturamento-valor">R$ 0,00</span>
+    86	            </div>
+    87	        </div>
+    88	        
+    89	        <div class="filtros-negocios">
+    90	            <label>
+    91	                <input type="radio" name="periodo" value="mes" checked> Mês Atual
+    92	            </label>
+    93	            <label>
+    94	                <input type="radio" name="periodo" value="ano"> Ano Atual
+    95	            </label>
+    96	            <label>
+    97	                <input type="radio" name="periodo" value="todos"> Todos
+    98	            </label>
+    99	        </div>
+   100	        
+   101	        <div class="negocios-list" id="negociosList">
+   102	            <!-- Lista de negócios será inserida via JavaScript -->
+   103	        </div>
+   104	    </div>
+   105	
+   106	    <!-- MODAL: ADICIONAR LEAD -->
+   107	    <div class="modal hidden" id="addLeadModal">
+   108	        <div class="modal-content">
+   109	            <h3>Novo Lead</h3>
+   110	            <form id="addLeadForm">
+   111	                <input type="text" name="nome" placeholder="Nome" required>
+   112	                <input type="text" name="instagram" placeholder="Instagram (@)" required>
+   113	                <input type="tel" name="whatsapp" placeholder="WhatsApp" required>
+   114	                <textarea name="observacoes" placeholder="Observações"></textarea>
+   115	                <div class="modal-actions">
+   116	                    <button type="button" onclick="closeModal('addLeadModal')">Cancelar</button>
+   117	                    <button type="submit">Adicionar</button>
+   118	                </div>
+   119	            </form>
+   120	        </div>
+   121	    </div>
+   122	
+   123	    <!-- MODAL: EDITAR LEAD -->
+   124	    <div class="modal hidden" id="editLeadModal">
+   125	        <div class="modal-content">
+   126	            <h3>Editar Lead</h3>
+   127	            <form id="editLeadForm">
+   128	                <input type="hidden" name="leadId">
+   129	                <input type="text" name="nome" placeholder="Nome" required>
+   130	                <input type="text" name="instagram" placeholder="Instagram (@)" required>
+   131	                <input type="tel" name="whatsapp" placeholder="WhatsApp" required>
+   132	                <textarea name="observacoes" placeholder="Observações"></textarea>
+   133	                <div class="modal-actions">
+   134	                    <button type="button" onclick="closeModal('editLeadModal')">Cancelar</button>
+   135	                    <button type="submit">Salvar</button>
+   136	                </div>
+   137	            </form>
+   138	        </div>
+   139	    </div>
+   140	
+   141	    <!-- MODAL: TIPO DE PLANO (FECHAMENTO) -->
+   142	    <div class="modal hidden" id="planoModal">
+   143	        <div class="modal-content">
+   144	            <h3>🎯 Fechamento de Contrato</h3>
+   145	            <form id="planoForm">
+   146	                <input type="hidden" name="leadId">
+   147	                
+   148	                <label>Data do Fechamento:</label>
+   149	                <input type="date" name="data_fechamento" id="dataFechamento" required>
+   150	                
+   151	                <label>Número de Contas:</label>
+   152	                <input type="number" name="plano_contas" placeholder="Ex: 3" required>
+   153	                
+   154	                <label>Número de Postagens/mês:</label>
+   155	                <input type="number" name="plano_posts" placeholder="Ex: 20" required>
+   156	                
+   157	                <label>Valor do Contrato (R$):</label>
+   158	                <input type="number" name="plano_valor_contrato" step="0.01" placeholder="Ex: 1500.00" required>
+   159	                
+   160	                <label>Forma de Pagamento:</label>
+   161	                <select name="plano_forma_pagamento" required>
+   162	                    <option value="">Selecione...</option>
+   163	                    <option value="PIX">PIX</option>
+   164	                    <option value="Cartão">Cartão</option>
+   165	                </select>
+   166	                
+   167	                <label>Observações:</label>
+   168	                <textarea name="plano_observacoes" placeholder="Detalhes adicionais do contrato..."></textarea>
+   169	                
+   170	                <div class="modal-actions">
+   171	                    <button type="button" onclick="closeModal('planoModal')">Cancelar</button>
+   172	                    <button type="submit">Confirmar Fechamento</button>
+   173	                </div>
+   174	            </form>
+   175	        </div>
+   176	    </div>
+   177	
+   178	    <script src="app.js"></script>
+   179	</body>
+   180	</html>
