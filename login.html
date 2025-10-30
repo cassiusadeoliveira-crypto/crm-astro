@@ -372,7 +372,7 @@
         // Verificar se já está logado
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session) {
-                window.location.href = 'welcome.html';
+                window.location.href = 'index.html';
             }
         });
 
@@ -388,8 +388,7 @@
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: 'https://cassiusadeoliveira-crypto.github.io/crm-astro/welcome.html'
-
+                        redirectTo: 'https://cassiusadeoliveira-crypto.github.io/crm-astro/index.html'
                     }
                 });
 
