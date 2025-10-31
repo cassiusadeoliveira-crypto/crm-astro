@@ -1,3 +1,4 @@
+document.addEventListener('DOMContentLoaded', async function() {
 // ===================================
 // CRM ASTRO - Configuração
 // ===================================
@@ -563,4 +564,4 @@ document.querySelectorAll('[name="periodo"]').forEach(radio => {
 
 window.addEventListener('DOMContentLoaded', () => {
     checkAuth();
-});
+}); // Fecha DOMContentLoaded
