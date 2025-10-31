@@ -48,7 +48,7 @@ async function checkAuth() {
 }
 
 function updateUIWithUserData() {
-    document.getElementById('userNameDisplay').textContent = currentUser.nome_completo;
+    document.getElementById('userNameDisplay').textContent = currentUser.full_name;
     document.getElementById('userEmailDisplay').textContent = currentUser.email;
     
     if (currentUser.role !== 'ADMIN') {
@@ -67,7 +67,7 @@ async function logout() {
 function showWelcomeToast() {
     const toast = document.getElementById('welcomeToast');
     const userName = document.getElementById('toastUserName');
-    userName.textContent = currentUser.nome_completo;
+    userName.textContent = currentUser.full_name;
     toast.classList.add('show');
     
     setTimeout(() => {
@@ -431,7 +431,7 @@ async function loadRanking() {
         return `
             <tr ${isCurrentUser ? 'class="highlight-row"' : ''}>
                 <td>${medal} ${index + 1}º</td>
-                <td>${user.nome_completo}</td>
+                <td>${user.full_name}</td>
                 <td>${user.retornos_positivos}</td>
                 <td><span class="role-badge role-${user.role.toLowerCase()}">${user.role}</span></td>
             </tr>
