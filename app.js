@@ -1,5 +1,3 @@
-document.addEventListener('DOMContentLoaded', async function() {
-
 // ===================================
 // CONFIGURAÇÃO SUPABASE
 // ===================================
@@ -16,88 +14,40 @@ let allLeads = [];
 let currentFilter = 'all';
 
 // ===================================
-// AUTENTICAÇÃO COM DEBUG
+// AUTENTICAÇÃO
 // ===================================
 async function checkAuth() {
-    try {
-        console.log('1. Verificando sessão...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-            console.error('Erro ao buscar sessão:', sessionError);
-            alert('ERRO: Não conseguiu verificar sessão - ' + sessionError.message);
-            window.location.href = 'login.html';
-            return;
-        }
-        
-        if (!session) {
-            console.log('2. Sem sessão, redirecionando para login...');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        console.log('3. Sessão encontrada! Email:', session.user.email);
-        console.log('4. Buscando usuário no banco...');
-
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', session.user.email)
-            .single();
-
-        if (userError) {
-            console.error('5. ERRO ao buscar usuário:', userError);
-            alert('ERRO ao buscar usuário: ' + userError.message + ' - Código: ' + userError.code);
-            await supabase.auth.signOut();
-            window.location.href = 'login.html';
-            return;
-        }
-
-        if (!userData) {
-            console.error('6. Usuário não encontrado no banco');
-            alert('ERRO: Usuário não encontrado no banco de dados');
-            await supabase.auth.signOut();
-            window.location.href = 'login.html';
-            return;
-        }
-
-        console.log('7. Usuário encontrado:', userData.full_name);
-        currentUser = userData;
-        
-        console.log('8. Atualizando UI...');
-        updateUIWithUserData();
-        
-        console.log('9. Mostrando toast...');
-        showWelcomeToast();
-        
-        console.log('10. Carregando dados...');
-        await loadLeads();
-        await loadRanking();
-        await updateFaturamento();
-        
-        console.log('11. TUDO CARREGADO COM SUCESSO!');
-        
-    } catch (error) {
-        console.error('ERRO GERAL:', error);
-        alert('ERRO GERAL: ' + error.message);
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
         window.location.href = 'login.html';
+        return;
     }
+
+    const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', session.user.email)
+        .single();
+
+    if (error || !userData) {
+        console.error('Erro ao buscar usuário:', error);
+        await supabase.auth.signOut();
+        window.location.href = 'login.html';
+        return;
+    }
+
+    currentUser = userData;
+    updateUIWithUserData();
+    showWelcomeToast();
+    await loadLeads();
+    await loadRanking();
+    await updateFaturamento();
 }
 
 function updateUIWithUserData() {
-    try {
-        document.getElementById('userNameDisplay').textContent = currentUser.full_name;
-        document.getElementById('userEmailDisplay').textContent = currentUser.email;
-        
-        if (currentUser.role !== 'ADMIN') {
-            const adminPanel = document.getElementById('adminPanel');
-            if (adminPanel) {
-                adminPanel.style.display = 'none';
-            }
-        }
-    } catch (error) {
-        console.error('Erro ao atualizar UI:', error);
-    }
+    document.getElementById('userNameDisplay').textContent = currentUser.full_name;
+    document.getElementById('userEmailDisplay').textContent = currentUser.email;
 }
 
 async function logout() {
@@ -109,31 +59,19 @@ async function logout() {
 // TOAST DE BOAS-VINDAS
 // ===================================
 function showWelcomeToast() {
-    try {
-        const toast = document.getElementById('welcomeToast');
-        const userName = document.getElementById('toastUserName');
-        if (toast && userName) {
-            userName.textContent = currentUser.full_name;
-            toast.classList.add('show');
-            
-            setTimeout(() => {
-                closeToast();
-            }, 5000);
-        }
-    } catch (error) {
-        console.error('Erro no toast:', error);
-    }
+    const toast = document.getElementById('welcomeToast');
+    const userName = document.getElementById('toastUserName');
+    userName.textContent = currentUser.full_name;
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+        closeToast();
+    }, 5000);
 }
 
 function closeToast() {
-    try {
-        const toast = document.getElementById('welcomeToast');
-        if (toast) {
-            toast.classList.remove('show');
-        }
-    } catch (error) {
-        console.error('Erro ao fechar toast:', error);
-    }
+    const toast = document.getElementById('welcomeToast');
+    toast.classList.remove('show');
 }
 
 // ===================================
@@ -162,26 +100,22 @@ function showTab(tabName) {
 // GERENCIAMENTO DE LEADS
 // ===================================
 async function loadLeads() {
-    try {
-        let query = supabase.from('leads').select('*');
-        
-        if (currentUser.role !== 'ADMIN') {
-            query = query.eq('user_id', currentUser.id);
-        }
-        
-        const { data, error } = await query.order('created_at', { ascending: false });
-        
-        if (error) {
-            console.error('Erro ao carregar leads:', error);
-            return;
-        }
-        
-        allLeads = data || [];
-        renderLeads();
-        updateStats();
-    } catch (error) {
-        console.error('Erro geral ao carregar leads:', error);
+    let query = supabase.from('leads').select('*');
+    
+    if (currentUser.role !== 'ADMIN') {
+        query = query.eq('user_id', currentUser.id);
     }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
+    
+    if (error) {
+        console.error('Erro ao carregar leads:', error);
+        return;
+    }
+    
+    allLeads = data || [];
+    renderLeads();
+    updateStats();
 }
 
 function renderLeads() {
@@ -189,8 +123,6 @@ function renderLeads() {
     
     stages.forEach(stage => {
         const column = document.getElementById(stage + 'Column');
-        if (!column) return;
-        
         const filteredLeads = allLeads.filter(lead => {
             const matchStage = lead.stage === stage;
             const matchFilter = currentFilter === 'all' || lead.user_id === currentUser.id;
@@ -218,8 +150,8 @@ function createLeadCard(lead) {
             </div>
             ${lead.observacoes ? `<div class="lead-obs">${lead.observacoes}</div>` : ''}
             <div class="lead-actions">
-                <button onclick="editLead(${lead.id})" class="btn-edit">✏️</button>
-                <button onclick="deleteLead(${lead.id})" class="btn-delete">🗑️</button>
+                <button onclick="editLead(${lead.id})" class="btn-edit">✏️ Editar</button>
+                <button onclick="deleteLead(${lead.id})" class="btn-delete">🗑️ Excluir</button>
             </div>
         </div>
     `;
@@ -227,11 +159,14 @@ function createLeadCard(lead) {
 
 function renderLeadsTable() {
     const tbody = document.getElementById('leadsTableBody');
-    if (!tbody) return;
-    
     const filteredLeads = currentFilter === 'all' 
         ? allLeads 
         : allLeads.filter(lead => lead.user_id === currentUser.id);
+    
+    if (filteredLeads.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum lead cadastrado</td></tr>';
+        return;
+    }
     
     tbody.innerHTML = filteredLeads.map(lead => `
         <tr>
@@ -241,8 +176,8 @@ function renderLeadsTable() {
             <td><span class="stage-badge stage-${lead.stage}">${getStageLabel(lead.stage)}</span></td>
             <td>${new Date(lead.created_at).toLocaleDateString('pt-BR')}</td>
             <td>
-                <button onclick="editLead(${lead.id})" class="btn-action">✏️</button>
-                <button onclick="deleteLead(${lead.id})" class="btn-action">🗑️</button>
+                <button onclick="editLead(${lead.id})" class="btn-action" title="Editar">✏️</button>
+                <button onclick="deleteLead(${lead.id})" class="btn-action" title="Excluir">🗑️</button>
             </td>
         </tr>
     `).join('');
@@ -263,19 +198,20 @@ function getStageLabel(stage) {
 function updateStats() {
     const myLeads = allLeads.filter(lead => lead.user_id === currentUser.id);
     
-    const totalEl = document.getElementById('totalLeads');
-    const novosEl = document.getElementById('leadsNovos');
-    const contatoEl = document.getElementById('leadsContato');
-    const fechadosEl = document.getElementById('leadsFechados');
-    
-    if (totalEl) totalEl.textContent = myLeads.length;
-    if (novosEl) novosEl.textContent = myLeads.filter(l => l.stage === 'novo').length;
-    if (contatoEl) contatoEl.textContent = myLeads.filter(l => l.stage === 'contato').length;
-    if (fechadosEl) fechadosEl.textContent = myLeads.filter(l => l.stage === 'fechado').length;
+    document.getElementById('totalLeads').textContent = myLeads.length;
+    document.getElementById('leadsNovos').textContent = myLeads.filter(l => l.stage === 'novo').length;
+    document.getElementById('leadsContato').textContent = myLeads.filter(l => l.stage === 'contato').length;
+    document.getElementById('leadsFechados').textContent = myLeads.filter(l => l.stage === 'fechado').length;
 }
 
 function filterLeads(filter) {
     currentFilter = filter;
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
     renderLeads();
 }
 
@@ -297,7 +233,7 @@ document.addEventListener('dragend', function(e) {
 
 document.addEventListener('dragover', function(e) {
     e.preventDefault();
-    const column = e.target.closest('.kanban-column');
+    const column = e.target.closest('.column-content');
     if (column) {
         const dragging = document.querySelector('.dragging');
         if (dragging) {
@@ -308,7 +244,7 @@ document.addEventListener('dragover', function(e) {
 
 document.addEventListener('drop', async function(e) {
     e.preventDefault();
-    const column = e.target.closest('.kanban-column');
+    const column = e.target.closest('.column-content');
     if (column) {
         const leadCard = document.querySelector('.dragging');
         if (leadCard) {
@@ -361,7 +297,7 @@ async function saveLead() {
         instagram: document.getElementById('leadInstagram').value,
         observacoes: document.getElementById('leadObservacoes').value,
         user_id: currentUser.id,
-        stage: 'novo'
+        stage: leadId ? undefined : 'novo'
     };
     
     if (!leadData.nome || !leadData.telefone || !leadData.instagram) {
@@ -371,6 +307,7 @@ async function saveLead() {
     
     let error;
     if (leadId) {
+        delete leadData.stage;
         ({ error } = await supabase
             .from('leads')
             .update(leadData)
@@ -462,7 +399,6 @@ async function confirmClose() {
         return;
     }
     
-    // Incrementar retornos positivos do usuário
     const { error: userError } = await supabase
         .from('users')
         .update({ retornos_positivos: currentUser.retornos_positivos + 1 })
@@ -482,102 +418,96 @@ async function confirmClose() {
 // RANKING
 // ===================================
 async function loadRanking() {
-    try {
-        const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .order('retornos_positivos', { ascending: false });
-        
-        if (error) {
-            console.error('Erro ao carregar ranking:', error);
-            return;
-        }
-        
-        const tbody = document.getElementById('rankingTableBody');
-        if (!tbody) return;
-        
-        tbody.innerHTML = data.map((user, index) => {
-            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
-            const isCurrentUser = user.id === currentUser.id;
-            
-            return `
-                <tr ${isCurrentUser ? 'class="highlight-row"' : ''}>
-                    <td>${medal} ${index + 1}º</td>
-                    <td>${user.full_name}</td>
-                    <td>${user.retornos_positivos}</td>
-                    <td><span class="role-badge role-${user.role.toLowerCase()}">${user.role}</span></td>
-                </tr>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Erro geral no ranking:', error);
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('retornos_positivos', { ascending: false });
+    
+    if (error) {
+        console.error('Erro ao carregar ranking:', error);
+        return;
     }
+    
+    const tbody = document.getElementById('rankingTableBody');
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhum usuário no ranking</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = data.map((user, index) => {
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+        const isCurrentUser = user.id === currentUser.id;
+        
+        return `
+            <tr ${isCurrentUser ? 'class="highlight-row"' : ''}>
+                <td>${medal} ${index + 1}º</td>
+                <td>${user.full_name}</td>
+                <td>${user.retornos_positivos}</td>
+                <td><span class="role-badge role-${user.role.toLowerCase()}">${user.role}</span></td>
+            </tr>
+        `;
+    }).join('');
 }
 
 // ===================================
 // FATURAMENTO
 // ===================================
 async function updateFaturamento() {
-    try {
-        const { data, error } = await supabase
-            .from('leads')
-            .select('plano_valor_contrato')
-            .eq('stage', 'fechado');
-        
-        if (error) {
-            console.error('Erro ao calcular faturamento:', error);
-            return;
-        }
-        
-        const total = data.reduce((sum, lead) => {
-            const valor = parseFloat(lead.plano_valor_contrato) || 0;
-            return sum + valor;
-        }, 0);
-        
-        const faturamentoEl = document.getElementById('faturamentoTotal');
-        if (faturamentoEl) {
-            faturamentoEl.textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-        
-        renderNegociosFechados(data);
-    } catch (error) {
-        console.error('Erro geral no faturamento:', error);
+    const { data, error } = await supabase
+        .from('leads')
+        .select('plano_valor_contrato')
+        .eq('stage', 'fechado');
+    
+    if (error) {
+        console.error('Erro ao calcular faturamento:', error);
+        return;
     }
+    
+    const total = (data || []).reduce((sum, lead) => {
+        const valor = parseFloat(lead.plano_valor_contrato) || 0;
+        return sum + valor;
+    }, 0);
+    
+    document.getElementById('faturamentoTotal').textContent = 
+        total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    
+    await renderNegociosFechados();
 }
 
 async function renderNegociosFechados() {
-    try {
-        const { data, error } = await supabase
-            .from('leads')
-            .select('*')
-            .eq('stage', 'fechado')
-            .order('data_fechamento', { ascending: false });
-        
-        if (error) {
-            console.error('Erro ao carregar negócios:', error);
-            return;
-        }
-        
-        const tbody = document.getElementById('negociosTableBody');
-        if (!tbody) return;
-        
-        tbody.innerHTML = data.map(lead => `
-            <tr>
-                <td>${lead.nome}</td>
-                <td>${lead.plano_contas || '-'}</td>
-                <td>${lead.plano_posts || '-'}</td>
-                <td>${parseFloat(lead.plano_valor_contrato || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                <td>${lead.plano_forma_pagamento || '-'}</td>
-                <td>${new Date(lead.data_fechamento).toLocaleDateString('pt-BR')}</td>
-            </tr>
-        `).join('');
-    } catch (error) {
-        console.error('Erro geral nos negócios fechados:', error);
+    const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('stage', 'fechado')
+        .order('data_fechamento', { ascending: false });
+    
+    if (error) {
+        console.error('Erro ao carregar negócios:', error);
+        return;
     }
+    
+    const tbody = document.getElementById('negociosTableBody');
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum negócio fechado ainda</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = data.map(lead => `
+        <tr>
+            <td>${lead.nome}</td>
+            <td>${lead.plano_contas || '-'}</td>
+            <td>${lead.plano_posts || '-'}</td>
+            <td>${parseFloat(lead.plano_valor_contrato || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td>${lead.plano_forma_pagamento || '-'}</td>
+            <td>${new Date(lead.data_fechamento).toLocaleDateString('pt-BR')}</td>
+        </tr>
+    `).join('');
 }
 
 // ===================================
-// FUNÇÕES GLOBAIS
+// FUNÇÕES GLOBAIS (para onclick)
 // ===================================
 window.showTab = showTab;
 window.logout = logout;
@@ -595,7 +525,8 @@ window.confirmClose = confirmClose;
 // ===================================
 // INICIALIZAÇÃO
 // ===================================
-console.log('INICIANDO APP...');
-checkAuth();
-
-}); // Fecha DOMContentLoaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkAuth);
+} else {
+    checkAuth();
+}
