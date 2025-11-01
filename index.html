@@ -8,15 +8,25 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Header Profissional -->
+    <!-- Header com Logo -->
     <header class="main-header">
         <div class="header-left">
-            <svg class="header-logo-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
-                <path d="M50 10 L90 100 L70 100 L50 60 L30 100 L10 100 Z" fill="#00AEEF"/>
-                <path d="M50 40 L65 70 L35 70 Z" fill="#1A1A42"/>
-            </svg>
-            <h1 class="header-logo-text">ASTRO</h1>
-            <span class="header-subtitle">CRM</span>
+            <div class="logo-container">
+                <svg class="header-logo-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00AEEF;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#0088cc;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M50 10 L90 100 L70 100 L50 60 L30 100 L10 100 Z" fill="url(#logoGradient)"/>
+                    <path d="M50 40 L65 70 L35 70 Z" fill="#1A1A42"/>
+                </svg>
+                <div class="logo-text-container">
+                    <h1 class="header-logo-text">ASTRO</h1>
+                    <span class="header-subtitle">CRM</span>
+                </div>
+            </div>
         </div>
         
         <div class="header-right">
@@ -52,7 +62,7 @@
             <i class="fas fa-chart-line"></i>
             Dashboard
         </button>
-        <button class="nav-btn" onclick="showTab('negocios')">
+        <button class="nav-btn" id="negociosBtn" onclick="showTab('negocios')">
             <i class="fas fa-dollar-sign"></i>
             Novos Negócios
         </button>
@@ -111,7 +121,7 @@
         </div>
 
         <div class="kanban-board">
-            <div class="kanban-column">
+            <div class="kanban-column" data-stage="novo">
                 <div class="column-header" style="border-color: #6c5ce7;">
                     <i class="fas fa-star"></i>
                     <h3>Novo</h3>
@@ -119,7 +129,7 @@
                 <div id="novoColumn" class="column-content"></div>
             </div>
 
-            <div class="kanban-column">
+            <div class="kanban-column" data-stage="contato">
                 <div class="column-header" style="border-color: #00b894;">
                     <i class="fas fa-phone"></i>
                     <h3>Em Contato</h3>
@@ -127,7 +137,7 @@
                 <div id="contatoColumn" class="column-content"></div>
             </div>
 
-            <div class="kanban-column">
+            <div class="kanban-column" data-stage="interessado">
                 <div class="column-header" style="border-color: #fdcb6e;">
                     <i class="fas fa-heart"></i>
                     <h3>Interessado</h3>
@@ -135,7 +145,7 @@
                 <div id="interessadoColumn" class="column-content"></div>
             </div>
 
-            <div class="kanban-column">
+            <div class="kanban-column" data-stage="negociacao">
                 <div class="column-header" style="border-color: #e17055;">
                     <i class="fas fa-handshake"></i>
                     <h3>Negociação</h3>
@@ -143,7 +153,7 @@
                 <div id="negociacaoColumn" class="column-content"></div>
             </div>
 
-            <div class="kanban-column">
+            <div class="kanban-column" data-stage="fechado">
                 <div class="column-header" style="border-color: #00b894;">
                     <i class="fas fa-check-circle"></i>
                     <h3>Fechado</h3>
@@ -151,7 +161,7 @@
                 <div id="fechadoColumn" class="column-content"></div>
             </div>
 
-            <div class="kanban-column">
+            <div class="kanban-column" data-stage="perdido">
                 <div class="column-header" style="border-color: #d63031;">
                     <i class="fas fa-times-circle"></i>
                     <h3>Perdido</h3>
@@ -165,10 +175,21 @@
     <div id="negociosTab" class="tab-content">
         <div class="page-header">
             <h2><i class="fas fa-dollar-sign"></i> Novos Negócios</h2>
-            <div class="faturamento-total">
-                <span>Faturamento Total:</span>
-                <strong id="faturamentoTotal">R$ 0,00</strong>
+            <div class="faturamento-section">
+                <div class="filter-periodo">
+                    <button onclick="filterFaturamento('dia')" class="periodo-btn active">Dia</button>
+                    <button onclick="filterFaturamento('semana')" class="periodo-btn">Semana</button>
+                    <button onclick="filterFaturamento('mes')" class="periodo-btn">Mês</button>
+                </div>
+                <div class="faturamento-total">
+                    <span>Faturamento Total:</span>
+                    <strong id="faturamentoTotal">R$ 0,00</strong>
+                </div>
             </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="faturamentoChart"></canvas>
         </div>
 
         <div class="table-container">
@@ -176,6 +197,8 @@
                 <thead>
                     <tr>
                         <th>Cliente</th>
+                        <th>E-mail</th>
+                        <th>Telefone</th>
                         <th>Contas</th>
                         <th>Posts/Mês</th>
                         <th>Valor</th>
@@ -185,7 +208,7 @@
                 </thead>
                 <tbody id="negociosTableBody">
                     <tr>
-                        <td colspan="6" class="empty-state">Nenhum negócio fechado ainda</td>
+                        <td colspan="8" class="empty-state">Nenhum negócio fechado ainda</td>
                     </tr>
                 </tbody>
             </table>
@@ -196,6 +219,11 @@
     <div id="leadsTab" class="tab-content">
         <div class="page-header">
             <h2><i class="fas fa-users"></i> Todos os Leads</h2>
+            <div id="adminLeadFilters" class="admin-filters" style="display: none;">
+                <select id="colaboradorFilter" onchange="filterLeadsByColaborador()">
+                    <option value="all">Todos os colaboradores</option>
+                </select>
+            </div>
         </div>
 
         <div class="table-container">
@@ -203,16 +231,17 @@
                 <thead>
                     <tr>
                         <th>Nome</th>
-                        <th>Telefone</th>
                         <th>Instagram</th>
+                        <th>WhatsApp</th>
                         <th>Status</th>
+                        <th>Responsável</th>
                         <th>Data</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="leadsTableBody">
                     <tr>
-                        <td colspan="6" class="empty-state">Nenhum lead cadastrado</td>
+                        <td colspan="7" class="empty-state">Nenhum lead cadastrado</td>
                     </tr>
                 </tbody>
             </table>
@@ -255,23 +284,23 @@
                 <input type="hidden" id="leadId">
                 
                 <div class="form-group">
-                    <label>Nome Completo *</label>
-                    <input type="text" id="leadNome" required>
+                    <label>Nome *</label>
+                    <input type="text" id="leadNome" required placeholder="Ex: Flávio Augusto">
                 </div>
                 
                 <div class="form-group">
-                    <label>Telefone *</label>
-                    <input type="tel" id="leadTelefone" required>
+                    <label>@ do Instagram *</label>
+                    <input type="text" id="leadInstagram" required placeholder="Ex: flavioaugustogv">
                 </div>
                 
                 <div class="form-group">
-                    <label>Instagram (sem @) *</label>
-                    <input type="text" id="leadInstagram" required>
+                    <label>WhatsApp *</label>
+                    <input type="tel" id="leadTelefone" required placeholder="Ex: (11) 98765-4321">
                 </div>
                 
                 <div class="form-group">
                     <label>Observações</label>
-                    <textarea id="leadObservacoes" rows="3"></textarea>
+                    <textarea id="leadObservacoes" rows="3" placeholder="Anotações sobre o lead..."></textarea>
                 </div>
                 
                 <div class="modal-actions">
@@ -331,14 +360,8 @@
         </div>
     </div>
 
-   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-// Capturar callback do OAuth ANTES do app.js carregar
-const hashParams = new URLSearchParams(window.location.hash.substring(1));
-if (hashParams.get('access_token')) {
-    console.log('✅ OAuth callback detectado! Token:', hashParams.get('access_token').substring(0, 20) + '...');
-}
-</script>
-<script src="app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
