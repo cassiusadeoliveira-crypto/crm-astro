@@ -331,7 +331,14 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// Capturar callback do OAuth ANTES do app.js carregar
+const hashParams = new URLSearchParams(window.location.hash.substring(1));
+if (hashParams.get('access_token')) {
+    console.log('✅ OAuth callback detectado! Token:', hashParams.get('access_token').substring(0, 20) + '...');
+}
+</script>
+<script src="app.js"></script>
 </body>
 </html>
