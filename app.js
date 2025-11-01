@@ -1,5 +1,5 @@
 // ============================================
-// CRM ASTRO - APP DEBUG VERSION
+// CRM ASTRO - APP DEBUG V2 (COM FIX DE SESSÃO)
 // ============================================
 
 const SUPABASE_URL = 'https://uddrzwpycixkmegliftj.supabase.co';
@@ -58,21 +58,21 @@ function showDebugMessage(message, type = 'info', duration = 3000) {
 // INICIALIZAÇÃO
 // ============================================
 document.addEventListener('DOMContentLoaded', async () => {
-  showDebugMessage('📱 DASHBOARD: Página carregada', 'info');
+  showDebugMessage('📱 DASHBOARD: Carregado', 'info');
   
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  // FORÇAR LOGOUT SE NÃO VIER DO LOGIN
+  // VERIFICAR FLAG
   const cameFromLogin = sessionStorage.getItem('cameFromLogin');
   
-  showDebugMessage('🔍 Verificando flag cameFromLogin...', 'info');
-  showDebugMessage('Valor: ' + (cameFromLogin || 'NULL/VAZIO'), cameFromLogin ? 'success' : 'error');
+  showDebugMessage('🔍 Verificando flag...', 'info');
+  showDebugMessage('Valor: ' + (cameFromLogin || 'NULL'), cameFromLogin ? 'success' : 'error');
   
   await new Promise(resolve => setTimeout(resolve, 2000));
   
   if (!cameFromLogin) {
     showDebugMessage('❌ FLAG NÃO ENCONTRADA!', 'error', 5000);
-    showDebugMessage('🔄 Redirecionando para login em 3 segundos...', 'error', 3000);
+    showDebugMessage('Redirecionando em 3s...', 'error', 3000);
     
     await new Promise(resolve => setTimeout(resolve, 3000));
     
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
   
-  showDebugMessage('✅ Flag encontrada! Continuando inicialização...', 'success');
+  showDebugMessage('✅ Flag OK!', 'success');
   
   await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -92,28 +92,90 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initializeApp() {
   try {
-    showDebugMessage('🚀 Iniciando aplicação...', 'info');
+    showDebugMessage('🚀 Iniciando...', 'info');
     
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    showDebugMessage('📡 Verificando sessão do Supabase...', 'info');
+    // PRIMEIRO: TENTAR RESTAURAR SESSÃO DOS TOKENS SALVOS
+    const savedAccessToken = sessionStorage.getItem('supabase_access_token');
+    const savedRefreshToken = sessionStorage.getItem('supabase_refresh_token');
+    
+    if (savedAccessToken) {
+      showDebugMessage('💾 Tokens salvos encontrados!', 'success');
+      showDebugMessage('🔄 Restaurando sessão...', 'info');
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      try {
+        const { data: sessionData, error: setError } = await supabase.auth.setSession({
+          access_token: savedAccessToken,
+          refresh_token: savedRefreshToken
+        });
+        
+        if (!setError && sessionData?.session) {
+          showDebugMessage('✅ Sessão restaurada!', 'success');
+        }
+      } catch (e) {
+        showDebugMessage('⚠️ Erro ao restaurar: ' + e.message, 'error');
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    showDebugMessage('📡 Verificando sessão...', 'info');
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     if (sessionError || !session) {
-      showDebugMessage('❌ Erro na sessão: ' + (sessionError?.message || 'Sessão não encontrada'), 'error', 5000);
+      // TENTAR USAR DADOS SALVOS
+      showDebugMessage('⚠️ Sessão não disponível', 'error');
+      showDebugMessage('🔄 Tentando dados salvos...', 'info');
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const savedUserData = sessionStorage.getItem('currentUserData');
+      
+      if (savedUserData) {
+        showDebugMessage('✅ Dados do usuário salvos!', 'success');
+        
+        const userData = JSON.parse(savedUserData);
+        
+        showDebugMessage('👤 Nome: ' + userData.full_name, 'success');
+        showDebugMessage('🎭 Role: ' + userData.role, 'success');
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        showDebugMessage('🎉 SUCESSO!', 'success');
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Remover debug após sucesso
+        const debugContainer = document.getElementById('debug-container');
+        if (debugContainer) {
+          debugContainer.style.opacity = '0';
+          debugContainer.style.transition = 'opacity 1s';
+          setTimeout(() => debugContainer.remove(), 1000);
+        }
+        
+        return;
+      }
+      
+      showDebugMessage('❌ Sem dados salvos', 'error', 5000);
+      showDebugMessage('Voltando ao login...', 'error', 3000);
+      
       await new Promise(resolve => setTimeout(resolve, 3000));
       window.location.href = 'login.html';
       return;
     }
 
-    showDebugMessage('✅ Sessão válida! Email: ' + session.user.email, 'success');
+    showDebugMessage('✅ Sessão válida!', 'success');
+    showDebugMessage('Email: ' + session.user.email, 'success');
     
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    showDebugMessage('🔍 Buscando dados do usuário no banco...', 'info');
+    showDebugMessage('🔍 Buscando usuário...', 'info');
 
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -124,7 +186,7 @@ async function initializeApp() {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (userError || !userData) {
-      showDebugMessage('❌ Erro ao buscar usuário: ' + (userError?.message || 'Não encontrado'), 'error', 5000);
+      showDebugMessage('❌ Usuário não encontrado', 'error', 5000);
       await new Promise(resolve => setTimeout(resolve, 3000));
       window.location.href = 'login.html';
       return;
@@ -134,14 +196,16 @@ async function initializeApp() {
     showDebugMessage('Nome: ' + userData.full_name, 'success');
     showDebugMessage('Role: ' + userData.role, 'success');
     
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    showDebugMessage('🎉 INICIALIZAÇÃO COMPLETA!', 'success');
-    showDebugMessage('Dashboard deve aparecer agora...', 'success');
+    // SALVAR DADOS
+    sessionStorage.setItem('currentUserData', JSON.stringify(userData));
     
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Remover container de debug após sucesso
+    showDebugMessage('🎉 COMPLETO!', 'success');
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Remover debug
     const debugContainer = document.getElementById('debug-container');
     if (debugContainer) {
       debugContainer.style.opacity = '0';
@@ -149,9 +213,8 @@ async function initializeApp() {
       setTimeout(() => debugContainer.remove(), 1000);
     }
 
-    console.log('✅ App inicializado com sucesso!');
   } catch (error) {
-    showDebugMessage('❌ ERRO FATAL: ' + error.message, 'error', 10000);
+    showDebugMessage('❌ ERRO: ' + error.message, 'error', 10000);
     showDebugMessage('Stack: ' + error.stack, 'error', 10000);
   }
 }
