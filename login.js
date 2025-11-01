@@ -1,5 +1,5 @@
 // ============================================
-// CRM ASTRO - LOGIN DEBUG VERSION
+// CRM ASTRO - LOGIN DEBUG V2 (COM FIX DE SESSÃO)
 // ============================================
 
 const SUPABASE_URL = 'https://uddrzwpycixkmegliftj.supabase.co';
@@ -11,7 +11,6 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY
 // FUNÇÃO PARA MOSTRAR MENSAGENS NA TELA
 // ============================================
 function showDebugMessage(message, type = 'info', duration = 5000) {
-  // Criar ou pegar o container de debug
   let debugContainer = document.getElementById('debug-container');
   
   if (!debugContainer) {
@@ -74,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     showDebugMessage('🧹 PASSO 4: Fazendo logout no Supabase...', 'info');
     await supabase.auth.signOut();
-    showDebugMessage('✅ PASSO 5: Todas as sessões limpas com sucesso!', 'success');
+    showDebugMessage('✅ PASSO 5: Todas as sessões limpas!', 'success');
   } catch (error) {
     showDebugMessage('❌ ERRO no logout: ' + error.message, 'error');
   }
@@ -95,9 +94,9 @@ function setupGoogleLogin() {
     loginBtn.addEventListener('click', async () => {
       await signInWithGoogle();
     });
-    showDebugMessage('✅ PASSO 7: Botão de login configurado!', 'success');
+    showDebugMessage('✅ PASSO 7: Botão configurado!', 'success');
   } else {
-    showDebugMessage('❌ ERRO: Botão de login não encontrado!', 'error');
+    showDebugMessage('❌ ERRO: Botão não encontrado!', 'error');
   }
 }
 
@@ -106,7 +105,7 @@ function setupGoogleLogin() {
 // ============================================
 async function signInWithGoogle() {
   try {
-    showDebugMessage('🚀 PASSO 8: Iniciando login com Google...', 'info');
+    showDebugMessage('🚀 PASSO 8: Iniciando login...', 'info');
 
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) {
@@ -116,17 +115,10 @@ async function signInWithGoogle() {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    showDebugMessage('🔗 PASSO 9: Configurando OAuth...', 'info');
-    
-    const redirectUrl = window.location.origin + '/crm-astro/index.html';
-    showDebugMessage('🔗 Redirect URL: ' + redirectUrl, 'info');
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: window.location.origin + '/crm-astro/index.html',
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -135,8 +127,7 @@ async function signInWithGoogle() {
     });
 
     if (error) {
-      showDebugMessage('❌ ERRO no login: ' + error.message, 'error', 10000);
-      
+      showDebugMessage('❌ ERRO: ' + error.message, 'error', 10000);
       if (loginBtn) {
         loginBtn.disabled = false;
         loginBtn.innerHTML = '<i class="fab fa-google"></i> Entrar com Google';
@@ -144,15 +135,9 @@ async function signInWithGoogle() {
       return;
     }
 
-    // Marcar que veio do login
-    showDebugMessage('✅ PASSO 10: Marcando flag cameFromLogin...', 'success');
-    sessionStorage.setItem('cameFromLogin', 'true');
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    showDebugMessage('🌐 PASSO 11: Redirecionando para Google OAuth...', 'success', 10000);
+    showDebugMessage('🌐 PASSO 9: Redirecionando para Google...', 'success', 10000);
   } catch (error) {
-    showDebugMessage('❌ ERRO INESPERADO: ' + error.message, 'error', 10000);
+    showDebugMessage('❌ ERRO: ' + error.message, 'error', 10000);
     
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) {
@@ -166,73 +151,83 @@ async function signInWithGoogle() {
 // VERIFICAR SE VOLTOU DO OAUTH
 // ============================================
 window.addEventListener('load', async () => {
-  // Verificar se há parâmetros de callback na URL
   const hashParams = new URLSearchParams(window.location.hash.substring(1));
   const accessToken = hashParams.get('access_token');
+  const refreshToken = hashParams.get('refresh_token');
 
   if (accessToken) {
-    showDebugMessage('🔄 PASSO 12: DETECTADO RETORNO DO GOOGLE OAUTH!', 'success', 10000);
+    showDebugMessage('🔄 PASSO 10: RETORNO DO GOOGLE!', 'success', 10000);
 
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     try {
-      showDebugMessage('📡 PASSO 13: Obtendo sessão do Supabase...', 'info');
+      showDebugMessage('💾 PASSO 11: Salvando tokens...', 'info');
       
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // SALVAR TOKENS NO SESSIONSTORAGE
+      sessionStorage.setItem('supabase_access_token', accessToken);
+      if (refreshToken) {
+        sessionStorage.setItem('supabase_refresh_token', refreshToken);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      showDebugMessage('📡 PASSO 12: Setando sessão no Supabase...', 'info');
+      
+      // SETAR A SESSÃO NO SUPABASE
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (sessionError || !session) {
-        showDebugMessage('❌ ERRO ao obter sessão: ' + (sessionError?.message || 'Sessão não encontrada'), 'error', 10000);
+      if (sessionError) {
+        showDebugMessage('❌ ERRO ao setar sessão: ' + sessionError.message, 'error', 10000);
         await new Promise(resolve => setTimeout(resolve, 5000));
         return;
       }
 
-      showDebugMessage('✅ PASSO 14: Sessão obtida! Email: ' + session.user.email, 'success');
+      showDebugMessage('✅ PASSO 13: Sessão setada! Email: ' + sessionData.session.user.email, 'success');
 
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      showDebugMessage('🔍 PASSO 15: Buscando usuário no banco de dados...', 'info');
+      showDebugMessage('🔍 PASSO 14: Buscando usuário no banco...', 'info');
 
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
-        .eq('email', session.user.email)
+        .eq('email', sessionData.session.user.email)
         .single();
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       if (userError || !userData) {
-        showDebugMessage('❌ ERRO: Usuário não encontrado no banco de dados!', 'error', 10000);
-        showDebugMessage('Email procurado: ' + session.user.email, 'error', 10000);
-        showDebugMessage('Erro: ' + (userError?.message || 'Usuário não existe'), 'error', 10000);
-        
+        showDebugMessage('❌ ERRO: Usuário não encontrado!', 'error', 10000);
+        showDebugMessage('Email: ' + sessionData.session.user.email, 'error', 10000);
         await new Promise(resolve => setTimeout(resolve, 5000));
-        
         await supabase.auth.signOut();
         return;
       }
 
-      showDebugMessage('✅ PASSO 16: Usuário encontrado! Nome: ' + userData.full_name, 'success');
+      showDebugMessage('✅ PASSO 15: Usuário: ' + userData.full_name, 'success');
       showDebugMessage('✅ Role: ' + userData.role, 'success');
 
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      showDebugMessage('🏷️ PASSO 17: Marcando flag cameFromLogin = true', 'info');
+      // SALVAR DADOS DO USUÁRIO
+      showDebugMessage('💾 PASSO 16: Salvando dados do usuário...', 'info');
+      sessionStorage.setItem('currentUserData', JSON.stringify(userData));
       sessionStorage.setItem('cameFromLogin', 'true');
 
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      showDebugMessage('🚀 PASSO 18: REDIRECIONANDO PARA DASHBOARD...', 'success', 5000);
-      showDebugMessage('⏰ Aguarde 3 segundos...', 'info', 3000);
+      showDebugMessage('🚀 PASSO 17: Redirecionando...', 'success', 5000);
 
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       window.location.href = 'index.html';
     } catch (error) {
-      showDebugMessage('❌ ERRO NO CALLBACK: ' + error.message, 'error', 10000);
-      showDebugMessage('Stack: ' + error.stack, 'error', 10000);
-      
+      showDebugMessage('❌ ERRO: ' + error.message, 'error', 10000);
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
