@@ -165,13 +165,24 @@
             </div>
         </div>
 
-        <!-- ABA 4: TODOS OS LEADS -->
+        <!-- ABA 4: TODOS OS LEADS - COM FILTROS -->
         <div id="leads" class="tab-content">
             <div class="leads-header">
                 <h2><i class="fas fa-list"></i> Todos os Leads</h2>
-                <button class="btn-primary" onclick="openLeadModal()">
-                    <i class="fas fa-plus"></i> Novo Lead
-                </button>
+                <div class="leads-filters">
+                    <select id="filterPeriodoLeads" onchange="renderLeadsTable()">
+                        <option value="todos">Todos os Períodos</option>
+                        <option value="dia">Hoje</option>
+                        <option value="semana">Esta Semana</option>
+                        <option value="mes">Este Mês</option>
+                    </select>
+                    <select id="filterColaborador" onchange="renderLeadsTable()">
+                        <option value="todos">Todos os Colaboradores</option>
+                    </select>
+                    <button class="btn-primary" onclick="openLeadModal()">
+                        <i class="fas fa-plus"></i> Novo Lead
+                    </button>
+                </div>
             </div>
             <div class="leads-table">
                 <table>
@@ -180,9 +191,10 @@
                             <th>Nome</th>
                             <th>Instagram</th>
                             <th>WhatsApp</th>
-                            <th>Email</th>
+                            <th>E-mail</th>
                             <th>Estágio</th>
                             <th>Responsável</th>
+                            <th>Cadastrado em</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -246,7 +258,7 @@
         </div>
     </div>
 
-    <!-- MODAL: FECHAMENTO -->
+    <!-- MODAL: FECHAMENTO - NOVOS CAMPOS -->
     <div id="fechamentoModal" class="modal">
         <div class="modal-content">
             <div class="modal-header success">
@@ -255,14 +267,33 @@
             </div>
             <form id="fechamentoForm" onsubmit="saveFechamento(event)">
                 <input type="hidden" id="fechamentoLeadId">
+                
+                <div class="form-group">
+                    <label><i class="fas fa-users"></i> Contas *</label>
+                    <input type="number" id="numContas" required min="1" placeholder="Número de contas">
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-images"></i> Publicações *</label>
+                    <input type="number" id="numPublicacoes" required min="1" placeholder="Número de publicações">
+                </div>
+                
                 <div class="form-group">
                     <label><i class="fas fa-dollar-sign"></i> Valor do Contrato *</label>
                     <input type="text" id="valorContrato" required placeholder="R$ 0,00">
                 </div>
+                
                 <div class="form-group">
                     <label><i class="fas fa-calendar"></i> Data do Fechamento *</label>
                     <input type="date" id="dataFechamento" required>
                 </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-day"></i> Vencimento em *</label>
+                    <input type="number" id="vencimentoDia" required min="1" max="31" placeholder="Dia do mês (1-31)" oninput="updateVencimentoText()">
+                    <small id="vencimentoText" class="vencimento-preview" style="display:none;"></small>
+                </div>
+                
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeFechamentoModal()">Cancelar</button>
                     <button type="submit" class="btn-success">Confirmar Fechamento</button>
