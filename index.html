@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM ASTRO - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <i class="fas fa-rocket"></i>
+                <span>CRM ASTRO</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+                <span id="userName" class="user-name"></span>
+                <span id="userRole" class="user-role"></span>
+            </div>
+            <button class="btn-logout" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="tabs">
+        <button class="tab-btn active" data-tab="kanban">
+            <i class="fas fa-columns"></i> Pipeline
+        </button>
+        <button class="tab-btn" data-tab="ranking">
+            <i class="fas fa-trophy"></i> Ranking
+        </button>
+        <button class="tab-btn" data-tab="negocios">
+            <i class="fas fa-chart-line"></i> Novos Negócios
+        </button>
+        <button class="tab-btn" data-tab="leads">
+            <i class="fas fa-list"></i> Todos os Leads
+        </button>
+    </nav>
+
+    <!-- CONTENT AREA -->
+    <main class="content">
+        <!-- ABA 1: KANBAN -->
+        <div id="kanban" class="tab-content active">
+            <div class="kanban-header">
+                <h2><i class="fas fa-rocket"></i> Pipeline de Vendas</h2>
+                <button class="btn-primary" onclick="openLeadModal()">
+                    <i class="fas fa-plus"></i> Novo Lead
+                </button>
+            </div>
+            <div class="kanban-board">
+                <div class="kanban-column" data-stage="novo">
+                    <div class="column-header">
+                        <h3><i class="fas fa-star"></i> Novo</h3>
+                        <span class="count">0</span>
+                    </div>
+                    <div class="column-cards"></div>
+                </div>
+                <div class="kanban-column" data-stage="em_contato">
+                    <div class="column-header">
+                        <h3><i class="fas fa-phone"></i> Em Contato</h3>
+                        <span class="count">0</span>
+                    </div>
+                    <div class="column-cards"></div>
+                </div>
+                <div class="kanban-column" data-stage="interessado">
+                    <div class="column-header">
+                        <h3><i class="fas fa-heart"></i> Interessado</h3>
+                        <span class="count">0</span>
+                    </div>
+                    <div class="column-cards"></div>
+                </div>
+                <div class="kanban-column" data-stage="negociacao">
+                    <div class="column-header">
+                        <h3><i class="fas fa-handshake"></i> Negociação</h3>
+                        <span class="count">0</span>
+                    </div>
+                    <div class="column-cards"></div>
+                </div>
+                <div class="kanban-column" data-stage="fechado">
+                    <div class="column-header success">
+                        <h3><i class="fas fa-check-circle"></i> Fechado</h3>
+                        <span class="count">0</span>
+                    </div>
+                    <div class="column-cards"></div>
+                </div>
+                <div class="kanban-column" data-stage="perdido">
+                    <div class="column-header danger">
+                        <h3><i class="fas fa-times-circle"></i> Perdido</h3>
+                        <span class="count">0</span>
+                    </div>
+                    <div class="column-cards"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: RANKING -->
+        <div id="ranking" class="tab-content">
+            <div class="ranking-header">
+                <h2><i class="fas fa-trophy"></i> Ranking de Retornos Positivos</h2>
+            </div>
+            <div class="ranking-list"></div>
+        </div>
+
+        <!-- ABA 3: NOVOS NEGÓCIOS -->
+        <div id="negocios" class="tab-content">
+            <div class="negocios-header">
+                <h2><i class="fas fa-chart-line"></i> Novos Negócios</h2>
+                <div class="filters">
+                    <select id="filterPeriodo" onchange="loadNovosNegocios()">
+                        <option value="dia">Hoje</option>
+                        <option value="semana">Esta Semana</option>
+                        <option value="mes" selected>Este Mês</option>
+                    </select>
+                    <select id="filterUsuario" onchange="loadNovosNegocios()">
+                        <option value="todos">Todos os Usuários</option>
+                    </select>
+                </div>
+            </div>
+            <div class="negocios-stats">
+                <div class="stat-card">
+                    <i class="fas fa-dollar-sign"></i>
+                    <div>
+                        <h3 id="faturamentoTotal">R$ 0,00</h3>
+                        <p>Faturamento Total</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <h3 id="totalFechamentos">0</h3>
+                        <p>Total de Fechamentos</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-chart-bar"></i>
+                    <div>
+                        <h3 id="ticketMedio">R$ 0,00</h3>
+                        <p>Ticket Médio</p>
+                    </div>
+                </div>
+            </div>
+            <div class="negocios-chart">
+                <canvas id="negociosChart"></canvas>
+            </div>
+            <div class="negocios-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Lead</th>
+                            <th>Responsável</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="negociosTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ABA 4: TODOS OS LEADS -->
+        <div id="leads" class="tab-content">
+            <div class="leads-header">
+                <h2><i class="fas fa-list"></i> Todos os Leads</h2>
+                <button class="btn-primary" onclick="openLeadModal()">
+                    <i class="fas fa-plus"></i> Novo Lead
+                </button>
+            </div>
+            <div class="leads-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Instagram</th>
+                            <th>WhatsApp</th>
+                            <th>Email</th>
+                            <th>Estágio</th>
+                            <th>Responsável</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: NOVO/EDITAR LEAD -->
+    <div id="leadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-plus"></i> <span id="modalTitle">Novo Lead</span></h2>
+                <button class="close" onclick="closeLeadModal()">&times;</button>
+            </div>
+            <form id="leadForm" onsubmit="saveLead(event)">
+                <input type="hidden" id="leadId">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Nome Completo *</label>
+                    <input type="text" id="leadName" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fab fa-instagram"></i> Instagram</label>
+                        <input type="text" id="leadInstagram" placeholder="@usuario">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-whatsapp"></i> WhatsApp</label>
+                        <input type="tel" id="leadWhatsapp" placeholder="(00) 00000-0000">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="leadEmail">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-sticky-note"></i> Observações</label>
+                    <textarea id="leadObservations" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-flag"></i> Estágio</label>
+                    <select id="leadStage">
+                        <option value="novo">Novo</option>
+                        <option value="em_contato">Em Contato</option>
+                        <option value="interessado">Interessado</option>
+                        <option value="negociacao">Negociação</option>
+                        <option value="fechado">Fechado</option>
+                        <option value="perdido">Perdido</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-user-tie"></i> Responsável</label>
+                    <select id="leadOwner"></select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeLeadModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: FECHAMENTO -->
+    <div id="fechamentoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header success">
+                <h2><i class="fas fa-check-circle"></i> Fechamento de Negócio</h2>
+                <button class="close" onclick="closeFechamentoModal()">&times;</button>
+            </div>
+            <form id="fechamentoForm" onsubmit="saveFechamento(event)">
+                <input type="hidden" id="fechamentoLeadId">
+                <div class="form-group">
+                    <label><i class="fas fa-dollar-sign"></i> Valor do Contrato *</label>
+                    <input type="text" id="valorContrato" required placeholder="R$ 0,00">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> Data do Fechamento *</label>
+                    <input type="date" id="dataFechamento" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeFechamentoModal()">Cancelar</button>
+                    <button type="submit" class="btn-success">Confirmar Fechamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

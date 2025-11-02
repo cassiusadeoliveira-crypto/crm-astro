@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM ASTRO - Login</title>
+    <link rel="stylesheet" href="login_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="stars2"></div>
+    <div class="stars3"></div>
+
+    <div class="login-container">
+        <div class="login-box">
+            <div class="logo">
+                <i class="fas fa-rocket"></i>
+                <h1>CRM ASTRO</h1>
+                <p class="tagline">Sistema de Prospecção Inteligente</p>
+            </div>
+
+            <div class="login-content">
+                <h2>Bem-vindo de volta!</h2>
+                <p class="subtitle">Faça login com sua conta Google</p>
+
+                <div id="g_id_onload"
+                     data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                     data-callback="handleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-size="large"
+                     data-theme="filled_blue"
+                     data-text="signin_with"
+                     data-shape="rectangular"
+                     data-logo_alignment="left"
+                     data-width="300">
+                </div>
+
+                <div class="divider">
+                    <span>ou</span>
+                </div>
+
+                <button class="google-btn" onclick="googleLogin()">
+                    <i class="fab fa-google"></i>
+                    Entrar com Google
+                </button>
+
+                <div class="loading" id="loading" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Autenticando...</p>
+                </div>
+
+                <div class="error-message" id="errorMessage" style="display: none;"></div>
+            </div>
+
+            <div class="login-footer">
+                <p class="info-text">
+                    <i class="fas fa-info-circle"></i>
+                    Somente usuários autorizados podem acessar o sistema
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>
