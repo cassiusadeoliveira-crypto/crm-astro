@@ -1,60 +1,75 @@
-// ========================================
-// CRM ASTRO - LOGIN (GOOGLE APPS SCRIPT)
-// ========================================
-
+// Configuração da API
 const API_URL = 'https://script.google.com/macros/s/AKfycbwm8ZzpyZVwNqb6U2rir3AyePsXnD31w5YfigwTGqxo8k84Juq_Hb5if-0nYoXoucmW/exec';
 
-// Verificar se já está logado
-if (localStorage.getItem('userEmail')) {
-    window.location.href = 'index.html';
+// Elementos do DOM
+const googleLoginBtn = document.getElementById('googleLoginBtn');
+const loadingIndicator = document.getElementById('loadingIndicator');
+
+// Função para mostrar loading
+function showLoading() {
+    googleLoginBtn.style.display = 'none';
+    loadingIndicator.style.display = 'block';
 }
 
-// ========================================
-// LOGIN SIMPLIFICADO
-// ========================================
-async function googleLogin() {
-    const email = prompt('Digite seu email autorizado:');
+// Função para esconder loading
+function hideLoading() {
+    googleLoginBtn.style.display = 'flex';
+    loadingIndicator.style.display = 'none';
+}
+
+// Função para fazer login com Google
+async function loginWithGoogle() {
+    const email = prompt('Digite seu email cadastrado:');
     
-    if (!email) return;
-    
-    showLoading(true);
-    
+    if (!email) {
+        alert('Email é obrigatório!');
+        return;
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        alert('Por favor, digite um email válido!');
+        return;
+    }
+
+    showLoading();
+
     try {
-        const response = await fetch(`${API_URL}?action=getUser&email=${encodeURIComponent(email)}`);
+        const response = await fetch(`${API_URL}?action=login&email=${encodeURIComponent(email)}`);
         const data = await response.json();
-        
-        if (data.success && data.user) {
-            localStorage.setItem('userEmail', email);
+
+        if (data.success) {
+            // Salvar dados do usuário no localStorage
+            localStorage.setItem('user', JSON.stringify(data.user));
+            
+            // Redirecionar para a página principal
             window.location.href = 'index.html';
         } else {
-            showError('❌ Usuário não autorizado. Somente membros da equipe podem acessar.');
+            hideLoading();
+            alert(data.message || 'Email não autorizado. Entre em contato com o administrador.');
         }
     } catch (error) {
-        console.error('Erro ao validar usuário:', error);
-        showError('Erro ao conectar com o servidor. Verifique sua conexão.');
-    } finally {
-        showLoading(false);
+        hideLoading();
+        console.error('Erro ao fazer login:', error);
+        alert('Erro ao conectar com o servidor. Tente novamente.');
     }
 }
 
-// ========================================
-// HELPERS
-// ========================================
-function showLoading(show) {
-    const loading = document.getElementById('loading');
-    if (loading) {
-        loading.style.display = show ? 'flex' : 'none';
-    }
-}
+// Event listener para o botão de login
+googleLoginBtn.addEventListener('click', loginWithGoogle);
 
-function showError(message) {
-    const errorDiv = document.getElementById('errorMessage');
-    if (errorDiv) {
-        errorDiv.textContent = message;
-        errorDiv.style.display = 'block';
-        
-        setTimeout(() => {
-            errorDiv.style.display = 'none';
-        }, 5000);
+// Verificar se já está logado
+window.addEventListener('DOMContentLoaded', () => {
+    const user = localStorage.getItem('user');
+    if (user) {
+        window.location.href = 'index.html';
     }
-}
+});
+
+// Permitir login com Enter no prompt
+document.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && document.activeElement === googleLoginBtn) {
+        loginWithGoogle();
+    }
+});
