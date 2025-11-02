@@ -29,14 +29,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         showLoading(true);
-        await loadCurrentUser(userData.email);
-        await loadUsers();
-        await loadLeads();
+        
+        // OTIMIZAÇÃO: Carregar TUDO EM PARALELO (não em sequência)
+        const [userResult, usersResult, leadsResult] = await Promise.all([
+            loadCurrentUser(userData.email),
+            loadUsers(),
+            loadLeads()
+        ]);
+        
+        // Inicializar interface ASSIM QUE os leads carregarem
         initializeTabs();
         initializeDragAndDrop();
+        
+        showLoading(false);
+        
+        // Carregar ranking e negócios EM BACKGROUND (não bloqueia)
         loadRanking();
         loadNovosNegocios();
-        showLoading(false);
     } catch (error) {
         console.error('Erro na inicialização:', error);
         localStorage.removeItem('user');
@@ -966,7 +975,27 @@ function formatDate(dateString) {
 }
 
 function showLoading(show) {
-    // Implementar loading visual se necessário
+    const loadingEl = document.getElementById('loadingOverlay');
+    if (!loadingEl) {
+        // Criar overlay de loading se não existir
+        const overlay = document.createElement('div');
+        overlay.id = 'loadingOverlay';
+        overlay.className = 'loading-overlay';
+        overlay.innerHTML = `
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Carregando dados...</p>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+    
+    const overlay = document.getElementById('loadingOverlay');
+    if (show) {
+        overlay.style.display = 'flex';
+    } else {
+        overlay.style.display = 'none';
+    }
 }
 
 function showSuccess(message) {
