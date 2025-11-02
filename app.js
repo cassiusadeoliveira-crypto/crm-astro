@@ -1,5 +1,5 @@
 // ========================================
-// CRM ASTRO - GOOGLE APPS SCRIPT VERSION
+// CRM ASTRO - VERSÃO OTIMIZADA
 // ========================================
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbwm8ZzpyZVwNqb6U2rir3AyePsXnD31w5YfigwTGqxo8k84Juq_Hb5if-0nYoXoucmW/exec';
@@ -60,11 +60,18 @@ async function loadCurrentUser(email) {
 function updateUserInfo() {
     document.getElementById('userName').textContent = currentUser.full_name;
     document.getElementById('userRole').textContent = currentUser.role;
-    document.getElementById('userAvatar').src = currentUser.avatar_url || 'https://via.placeholder.com/40';
+    
+    const googlePhotoUrl = localStorage.getItem('userPhoto');
+    if (googlePhotoUrl) {
+        document.getElementById('userAvatar').src = googlePhotoUrl;
+    } else {
+        document.getElementById('userAvatar').src = currentUser.avatar_url || 'https://via.placeholder.com/40';
+    }
 }
 
 function logout() {
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userPhoto');
     window.location.href = 'login.html';
 }
 
@@ -80,6 +87,7 @@ async function loadUsers() {
             allUsers = data.users;
             populateOwnerSelects();
             populateFilterUsuarios();
+            populateFilterColaborador();
         }
     } catch (error) {
         console.error('Erro ao carregar usuários:', error);
@@ -133,6 +141,9 @@ function createLeadCard(lead) {
     const owner = allUsers.find(u => u.id === lead.owner_id);
     const ownerName = owner ? owner.full_name.split(' ')[0] : 'Sem responsável';
     
+    // Extrair username do Instagram (remover @)
+    const instagramUsername = lead.instagram ? lead.instagram.replace('@', '') : '';
+    
     card.innerHTML = `
         <div class="card-header">
             <h4>${lead.name}</h4>
@@ -148,7 +159,17 @@ function createLeadCard(lead) {
             </div>
         </div>
         <div class="card-body">
-            ${lead.instagram ? `<p><i class="fab fa-instagram"></i> ${lead.instagram}</p>` : ''}
+            ${lead.instagram ? `
+                <p class="instagram-link-wrapper">
+                    <i class="fab fa-instagram"></i> 
+                    <a href="https://instagram.com/${instagramUsername}" 
+                       target="_blank" 
+                       class="instagram-link"
+                       data-username="${instagramUsername}">
+                        ${lead.instagram}
+                    </a>
+                </p>
+            ` : ''}
             ${lead.whatsapp ? `<p><i class="fab fa-whatsapp"></i> ${lead.whatsapp}</p>` : ''}
             ${lead.email ? `<p><i class="fas fa-envelope"></i> ${lead.email}</p>` : ''}
             ${lead.observations ? `<p class="observations">${lead.observations}</p>` : ''}
@@ -165,7 +186,7 @@ function createLeadCard(lead) {
 }
 
 // ========================================
-// DRAG AND DROP
+// DRAG AND DROP - OTIMIZADO
 // ========================================
 let draggedCard = null;
 
@@ -216,6 +237,11 @@ async function handleDrop(e) {
         return;
     }
     
+    // ATUALIZAÇÃO OTIMISTA - Atualiza interface ANTES da API responder
+    const oldStage = lead.stage;
+    lead.stage = newStage;
+    renderKanban();
+    
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -228,20 +254,23 @@ async function handleDrop(e) {
         
         const data = await response.json();
         
-        if (data.success) {
-            await loadLeads();
-            showSuccess('Lead atualizado com sucesso!');
-        } else {
+        if (!data.success) {
+            // Se falhar, reverte
+            lead.stage = oldStage;
+            renderKanban();
             showError(data.message || 'Erro ao atualizar lead');
         }
     } catch (error) {
+        // Se falhar, reverte
+        lead.stage = oldStage;
+        renderKanban();
         console.error('Erro ao atualizar estágio:', error);
         showError('Erro ao atualizar lead');
     }
 }
 
 // ========================================
-// MODAL DE LEAD
+// MODAL DE LEAD - OTIMIZADO
 // ========================================
 function openLeadModal(leadId = null) {
     const modal = document.getElementById('leadModal');
@@ -294,9 +323,22 @@ async function saveLead(e) {
         leadData.leadId = leadId;
     }
     
+    // ATUALIZAÇÃO OTIMISTA
+    closeLeadModal();
+    
+    if (!leadId) {
+        // Criar lead temporário na interface
+        const tempLead = {
+            id: 'temp_' + Date.now(),
+            ...leadData,
+            created_at: new Date().toISOString().split('T')[0]
+        };
+        allLeads.push(tempLead);
+        renderKanban();
+        renderLeadsTable();
+    }
+    
     try {
-        showLoading(true);
-        
         const response = await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify(leadData)
@@ -305,17 +347,27 @@ async function saveLead(e) {
         const data = await response.json();
         
         if (data.success) {
-            closeLeadModal();
+            // Recarregar dados reais da API
             await loadLeads();
             showSuccess(leadId ? 'Lead atualizado!' : 'Lead criado!');
         } else {
+            // Reverter se falhar
+            if (!leadId) {
+                allLeads = allLeads.filter(l => !l.id.toString().startsWith('temp_'));
+                renderKanban();
+                renderLeadsTable();
+            }
             showError(data.message || 'Erro ao salvar lead');
         }
     } catch (error) {
+        // Reverter se falhar
+        if (!leadId) {
+            allLeads = allLeads.filter(l => !l.id.toString().startsWith('temp_'));
+            renderKanban();
+            renderLeadsTable();
+        }
         console.error('Erro ao salvar lead:', error);
         showError('Erro ao salvar lead');
-    } finally {
-        showLoading(false);
     }
 }
 
@@ -328,9 +380,14 @@ async function deleteLead(leadId) {
         return;
     }
     
+    // ATUALIZAÇÃO OTIMISTA
+    const leadIndex = allLeads.findIndex(l => l.id === leadId);
+    const deletedLead = allLeads[leadIndex];
+    allLeads.splice(leadIndex, 1);
+    renderKanban();
+    renderLeadsTable();
+    
     try {
-        showLoading(true);
-        
         const response = await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -342,21 +399,26 @@ async function deleteLead(leadId) {
         const data = await response.json();
         
         if (data.success) {
-            await loadLeads();
             showSuccess('Lead excluído!');
         } else {
+            // Reverter se falhar
+            allLeads.splice(leadIndex, 0, deletedLead);
+            renderKanban();
+            renderLeadsTable();
             showError(data.message || 'Erro ao excluir lead');
         }
     } catch (error) {
+        // Reverter se falhar
+        allLeads.splice(leadIndex, 0, deletedLead);
+        renderKanban();
+        renderLeadsTable();
         console.error('Erro ao excluir lead:', error);
         showError('Erro ao excluir lead');
-    } finally {
-        showLoading(false);
     }
 }
 
 // ========================================
-// MODAL DE FECHAMENTO
+// MODAL DE FECHAMENTO - NOVOS CAMPOS
 // ========================================
 function openFechamentoModal(leadId) {
     const modal = document.getElementById('fechamentoModal');
@@ -372,30 +434,48 @@ function closeFechamentoModal() {
     document.getElementById('fechamentoModal').style.display = 'none';
 }
 
+function updateVencimentoText() {
+    const vencimentoInput = document.getElementById('vencimentoDia');
+    const vencimentoText = document.getElementById('vencimentoText');
+    const dia = parseInt(vencimentoInput.value);
+    
+    if (dia >= 1 && dia <= 31) {
+        vencimentoText.textContent = `Todo dia ${dia}`;
+        vencimentoText.style.display = 'block';
+    } else {
+        vencimentoText.style.display = 'none';
+    }
+}
+
 async function saveFechamento(e) {
     e.preventDefault();
     
     const leadId = document.getElementById('fechamentoLeadId').value;
+    const contas = document.getElementById('numContas').value;
+    const publicacoes = document.getElementById('numPublicacoes').value;
     const valorContrato = document.getElementById('valorContrato').value;
     const dataFechamento = document.getElementById('dataFechamento').value;
+    const vencimentoDia = document.getElementById('vencimentoDia').value;
+    
+    closeFechamentoModal();
     
     try {
-        showLoading(true);
-        
         const response = await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 action: 'saveFechamento',
                 leadId: leadId,
+                contas: contas,
+                publicacoes: publicacoes,
                 valor_contrato: valorContrato,
-                data_fechamento: dataFechamento
+                data_fechamento: dataFechamento,
+                vencimento_dia: vencimentoDia
             })
         });
         
         const data = await response.json();
         
         if (data.success) {
-            closeFechamentoModal();
             await loadLeads();
             loadRanking();
             loadNovosNegocios();
@@ -406,13 +486,11 @@ async function saveFechamento(e) {
     } catch (error) {
         console.error('Erro ao salvar fechamento:', error);
         showError('Erro ao salvar fechamento');
-    } finally {
-        showLoading(false);
     }
 }
 
 // ========================================
-// RANKING
+// RANKING - APENAS USERS
 // ========================================
 async function loadRanking() {
     try {
@@ -420,7 +498,8 @@ async function loadRanking() {
         const data = await response.json();
         
         if (data.success) {
-            renderRanking(data.ranking);
+            const usersOnly = data.ranking.filter(user => user.role === 'USER');
+            renderRanking(usersOnly);
         }
     } catch (error) {
         console.error('Erro ao carregar ranking:', error);
@@ -440,9 +519,11 @@ function renderRanking(ranking) {
         else if (index === 1) medal = '🥈';
         else if (index === 2) medal = '🥉';
         
+        const photoUrl = user.avatar_url || 'https://via.placeholder.com/50';
+        
         card.innerHTML = `
             <div class="ranking-position">${medal || (index + 1)}</div>
-            <img src="${user.avatar_url || 'https://via.placeholder.com/50'}" alt="${user.full_name}" class="ranking-avatar">
+            <img src="${photoUrl}" alt="${user.full_name}" class="ranking-avatar">
             <div class="ranking-info">
                 <h3>${user.full_name}</h3>
                 <p>${user.role}</p>
@@ -553,22 +634,49 @@ function renderNegociosChart(negocios) {
 }
 
 // ========================================
-// TABELA DE LEADS
+// TABELA DE LEADS - COM FILTROS
 // ========================================
 function renderLeadsTable() {
     const tbody = document.getElementById('leadsTableBody');
     tbody.innerHTML = '';
     
-    allLeads.forEach(lead => {
+    // Aplicar filtros
+    const periodo = document.getElementById('filterPeriodoLeads')?.value || 'todos';
+    const colaborador = document.getElementById('filterColaborador')?.value || 'todos';
+    
+    let filteredLeads = [...allLeads];
+    
+    // Filtro de período
+    if (periodo !== 'todos') {
+        const hoje = new Date();
+        filteredLeads = filteredLeads.filter(lead => {
+            if (!lead.created_at) return false;
+            const dataLead = new Date(lead.created_at);
+            const diffDays = Math.floor((hoje - dataLead) / (1000 * 60 * 60 * 24));
+            
+            if (periodo === 'dia' && diffDays > 1) return false;
+            if (periodo === 'semana' && diffDays > 7) return false;
+            if (periodo === 'mes' && diffDays > 30) return false;
+            return true;
+        });
+    }
+    
+    // Filtro de colaborador
+    if (colaborador !== 'todos') {
+        filteredLeads = filteredLeads.filter(lead => lead.owner_id === parseInt(colaborador));
+    }
+    
+    filteredLeads.forEach(lead => {
         const owner = allUsers.find(u => u.id === lead.owner_id);
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${lead.name}</td>
-            <td>${lead.instagram || '-'}</td>
-            <td>${lead.whatsapp || '-'}</td>
-            <td>${lead.email || '-'}</td>
+            <td>${lead.instagram || '—'}</td>
+            <td>${lead.whatsapp || '—'}</td>
+            <td>${lead.email || '—'}</td>
             <td><span class="badge badge-${lead.stage}">${getStageLabel(lead.stage)}</span></td>
-            <td>${owner ? owner.full_name : '-'}</td>
+            <td>${owner ? owner.full_name : '—'}</td>
+            <td>${formatDate(lead.created_at)}</td>
             <td>
                 <button onclick="editLead('${lead.id}')" class="btn-icon" title="Editar">
                     <i class="fas fa-edit"></i>
@@ -629,6 +737,20 @@ function populateFilterUsuarios() {
     });
 }
 
+function populateFilterColaborador() {
+    const select = document.getElementById('filterColaborador');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="todos">Todos os Colaboradores</option>';
+    
+    allUsers.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = user.full_name;
+        select.appendChild(option);
+    });
+}
+
 function getStageLabel(stage) {
     const labels = {
         'novo': 'Novo',
@@ -649,7 +771,7 @@ function formatCurrency(value) {
 }
 
 function formatDate(dateString) {
-    if (!dateString) return '-';
+    if (!dateString) return '—';
     const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('pt-BR');
 }
@@ -659,9 +781,34 @@ function showLoading(show) {
 }
 
 function showSuccess(message) {
-    alert('✅ ' + message);
+    // Toast notification otimizado
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-success';
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
 }
 
 function showError(message) {
-    alert('❌ ' + message);
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-error';
+    toast.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
