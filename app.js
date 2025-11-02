@@ -2,7 +2,7 @@
 // CRM ASTRO - VERSÃO OTIMIZADA
 // ========================================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwm8ZzpyZVwNqb6U2rir3AyePsXnD31w5YfigwTGqxo8k84Juq_Hb5if-0nYoXoucmW/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyb_jzBWZaVGJDjOrwD086qDVu6fxjreoYGvZpyRDVYNzlADyRq-TNq7l3wX2DaGXIX/exec';
 
 // Estado global
 let currentUser = null;
@@ -14,15 +14,22 @@ let negociosChart = null;
 // INICIALIZAÇÃO
 // ========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    const userEmail = localStorage.getItem('userEmail');
-    if (!userEmail) {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
         window.location.href = 'login.html';
         return;
     }
 
     try {
+        const userData = JSON.parse(userStr);
+        if (!userData || !userData.email) {
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+            return;
+        }
+
         showLoading(true);
-        await loadCurrentUser(userEmail);
+        await loadCurrentUser(userData.email);
         await loadUsers();
         await loadLeads();
         initializeTabs();
@@ -32,8 +39,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         showLoading(false);
     } catch (error) {
         console.error('Erro na inicialização:', error);
-        showError('Erro ao carregar dados. Por favor, recarregue a página.');
-        showLoading(false);
+        localStorage.removeItem('user');
+        showError('Erro ao carregar dados. Redirecionando para login...');
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 2000);
     }
 });
 
@@ -70,7 +80,7 @@ function updateUserInfo() {
 }
 
 function logout() {
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('user');
     localStorage.removeItem('userPhoto');
     window.location.href = 'login.html';
 }
