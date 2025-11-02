@@ -1,5 +1,5 @@
-// Configuração da API
-const API_URL = 'https://script.google.com/macros/s/AKfycbwm8ZzpyZVwNqb6U2rir3AyePsXnD31w5YfigwTGqxo8k84Juq_Hb5if-0nYoXoucmW/exec';
+// Configuração da API - URL ATUALIZADA
+const API_URL = 'https://script.google.com/macros/s/AKfycbyb_jzBWZaVGJDjOrwD086qDVu6fxjreoYGvZpyRDVYNzlADyRq-TNq7l3wX2DaGXIX/exec';
 
 // Elementos do DOM
 const googleLoginBtn = document.getElementById('googleLoginBtn');
