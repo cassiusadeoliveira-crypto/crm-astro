@@ -713,3 +713,117 @@ textarea {
         grid-template-columns: 1fr;
     }
 }
+
+/* ========================================
+   INSTAGRAM PREVIEW
+   ======================================== */
+.instagram-link-wrapper {
+    position: relative;
+}
+
+.instagram-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.instagram-link:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* ========================================
+   TOAST NOTIFICATIONS
+   ======================================== */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--surface);
+    color: var(--text-primary);
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s;
+    z-index: 10000;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-success {
+    border-left: 4px solid var(--success);
+}
+
+.toast-error {
+    border-left: 4px solid var(--danger);
+}
+
+.toast i {
+    font-size: 1.5rem;
+}
+
+.toast-success i {
+    color: var(--success);
+}
+
+.toast-error i {
+    color: var(--danger);
+}
+
+/* ========================================
+   FILTROS NA ABA LEADS
+   ======================================== */
+.leads-filters {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.leads-filters select {
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--surface-light);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* ========================================
+   VENCIMENTO PREVIEW
+   ======================================== */
+.vencimento-preview {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* ========================================
+   RESPONSIVIDADE MELHORADA
+   ======================================== */
+@media (max-width: 768px) {
+    .leads-filters {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .leads-filters select {
+        width: 100%;
+    }
+    
+    .toast {
+        right: 1rem;
+        left: 1rem;
+        bottom: 1rem;
+    }
+}
